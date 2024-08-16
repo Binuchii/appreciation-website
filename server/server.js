@@ -3,36 +3,34 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
+const MONGO_URI = process.env.MONGO_URI;
 
 // Middleware
-app.use(cors());
-app.use(bodyParser.json());
+app.use(cors()); // Enables Cross-Origin Resource Sharing (if needed)
+app.use(express.json()); // Parse JSON bodies
+app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+
+// Connect to MongoDB
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.log(err));
+
+// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// MongoDB Connection
-mongoose.connect('mongodb://127.0.0.1:27017/appreciations', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-});
-
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', () => {
-    console.log('Connected to MongoDB');
-});
-
-// Routes
-const apiRoutes = require('./routes/api');
-app.use('/api', apiRoutes);
-
-// Serve static files (HTML, CSS, JS)
+// Route to serve the HTML file
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+// API Routes
+const apiRoutes = require('../routes/api');
+app.use('/api', apiRoutes);
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
